@@ -320,29 +320,29 @@ module Stripe
       when 400, 404
         case error_data[:type]
         when "idempotency_error"
-          IdempotencyError.new(error_data[:message], opts)
+          IdempotencyError.new(error_data[:message], **opts)
         else
           InvalidRequestError.new(
             error_data[:message], error_data[:param],
-            opts
+            **opts
           )
         end
       when 401
-        AuthenticationError.new(error_data[:message], opts)
+        AuthenticationError.new(error_data[:message], **opts)
       when 402
         # TODO: modify CardError constructor to make code a keyword argument
         #       so we don't have to delete it from opts
         opts.delete(:code)
         CardError.new(
           error_data[:message], error_data[:param], error_data[:code],
-          opts
+          **opts
         )
       when 403
-        PermissionError.new(error_data[:message], opts)
+        PermissionError.new(error_data[:message], **opts)
       when 429
-        RateLimitError.new(error_data[:message], opts)
+        RateLimitError.new(error_data[:message], **opts)
       else
-        APIError.new(error_data[:message], opts)
+        APIError.new(error_data[:message], **opts)
       end
     end
 
@@ -358,22 +358,22 @@ module Stripe
                      idempotency_key: context.idempotency_key,
                      request_id: context.request_id)
 
-      args = [error_code, description, {
+      opts = {
         http_status: resp.http_status, http_body: resp.http_body,
         json_body: resp.data, http_headers: resp.http_headers,
-      },]
+      }
 
       case error_code
-      when "invalid_client"            then OAuth::InvalidClientError.new(*args)
-      when "invalid_grant"             then OAuth::InvalidGrantError.new(*args)
-      when "invalid_request"           then OAuth::InvalidRequestError.new(*args)
-      when "invalid_scope"             then OAuth::InvalidScopeError.new(*args)
-      when "unsupported_grant_type"    then OAuth::UnsupportedGrantTypeError.new(*args)
-      when "unsupported_response_type" then OAuth::UnsupportedResponseTypeError.new(*args)
+      when "invalid_client"            then OAuth::InvalidClientError.new(error_code, description, **opts)
+      when "invalid_grant"             then OAuth::InvalidGrantError.new(error_code, description, **opts)
+      when "invalid_request"           then OAuth::InvalidRequestError.new(error_code, description, **opts)
+      when "invalid_scope"             then OAuth::InvalidScopeError.new(error_code, description, **opts)
+      when "unsupported_grant_type"    then OAuth::UnsupportedGrantTypeError.new(error_code, description, **opts)
+      when "unsupported_response_type" then OAuth::UnsupportedResponseTypeError.new(error_code, description, **opts)
       else
         # We'd prefer that all errors are typed, but we create a generic
         # OAuthError in case we run into a code that we don't recognize.
-        OAuth::OAuthError.new(*args)
+        OAuth::OAuthError.new(error_code, description, **opts)
       end
     end
 
